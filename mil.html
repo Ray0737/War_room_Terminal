@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United States Military Database</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="mil.css" />
+
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black sticky-top">
+        <div class="container-fluid">
+
+            <div class="d-flex align-items-center flex-grow-1">
+                <a href="menu.html" class="nav-link-custom ms-3" title="RETURN TO MENU"
+                    style="text-decoration: none; cursor: pointer; color: #666; transition: 0.2s; font-size: 1.2rem;"
+                    onmouseover="this.style.color='#00a2ff'" onmouseout="this.style.color='#666'">
+                    <i class="bi bi-house-door"></i>
+                </a>
+                <div class="nav-link-custom ms-3" onclick="toggleManual()" title="HELP / MANUAL"
+                    style="cursor: pointer; color: #888; font-size: 0.8em; letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace;"
+                    onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">
+                    <i class="bi bi-terminal me-1"></i> MANUAL
+                </div>
+
+                <div class="nav-link-custom px-3" onclick="toggleSearch()" title="ASSET SEARCH"
+                    style="cursor: pointer; color: #666; transition: 0.2s; font-size: 1.2rem;"
+                    onmouseover="this.style.color='#0f0'" onmouseout="this.style.color='#666'">
+                    <i class="bi bi-search"></i>
+                </div>
+
+                <div class="nav-link-custom px-3" onclick="toggleVisibilityPanel()" title="SYSTEM VISIBILITY"
+                    style="cursor: pointer; color: #666; transition: 0.2s; font-size: 1.2rem;"
+                    onmouseover="this.style.color='#FF3B3B'" onmouseout="this.style.color='#666'">
+                    <i class="bi bi-radioactive "></i>
+                </div>
+
+                <div id="header-search-wrap" class="ms-2"
+                    style="display: none; position: relative; width: 100%; max-width: 600px; animation: slideLeft 0.3s ease-out;">
+
+                    <div class="d-flex gap-3">
+                        <div style="flex: 1; position: relative;">
+                            <div style="font-size: 0.5em; color: #666; margin-bottom: 2px;">AIR_ASSET</div>
+                            <input type="text" id="aircraft-search" placeholder="Tail No..." style="width: 100%; 
+                background: transparent; border: none; border-bottom: 1px solid #444; 
+                color: #0f0; font-family: 'IBM Plex Mono', monospace; font-size: 0.7em; 
+                outline: none; padding: 4px 0; letter-spacing: 1px;">
+                        </div>
+
+                        <div style="flex: 1; position: relative;">
+                            <div style="font-size: 0.5em; color: #666; margin-bottom: 2px;">GROUND_UNIT</div>
+                            <input type="text" id="ground-search" placeholder="VIN/ID..." style="width: 100%; 
+                            background: transparent; border: none; border-bottom: 1px solid #444; 
+                            color: #00a2ff; font-family: 'IBM Plex Mono', monospace; font-size: 0.7em; 
+                            outline: none; padding: 4px 0; letter-spacing: 1px;">
+                        </div>
+
+                        <div style="flex: 1; position: relative;">
+                            <div style="font-size: 0.5em; color: #666; margin-bottom: 2px;">ORDNANCE</div>
+                            <input type="text" id="ordnance-search" placeholder="Batch/Type..." style="width: 100%; 
+                            background: transparent; border: none; border-bottom: 1px solid #444; 
+                            color: #ff3b3b; font-family: 'IBM Plex Mono', monospace; font-size: 0.7em; 
+                            outline: none; padding: 4px 0; letter-spacing: 1px;">
+                        </div>
+                    </div>
+
+                    <div id="search-results" style="position: absolute; 
+                        top: 45px; left: 0; width: 100%; max-height: 250px; 
+                        overflow-y: auto; background: rgba(0,0,0,0.9); 
+                        border: 1px solid #333; z-index: 3000; 
+                        font-size: 0.7em; color: #888;">
+                    </div>
+                </div>
+            </div>
+
+            <div id="sidebar-intel-display"
+                style="display: none; position: absolute; top: 60px; left: 20px; width: 320px; max-height: 80vh; background: rgba(5, 5, 5, 0.95); border: 1px solid #444; padding: 20px; z-index: 2500; backdrop-filter: blur(15px); color: white; font-family: 'IBM Plex Mono', monospace; overflow-y: auto;">
+                <div class="d-flex justify-content-between align-items-start mb-3 border-bottom border-secondary pb-2">
+                    <div class="d-flex flex-column">
+                        <span
+                            style="color: #666; font-size: 0.6em; letter-spacing: 2px; font-weight: bold;">INTEL_QUERY_RESULTS</span>
+                        <span id="sb-name"
+                            style="color: #FFD700; font-weight: bold; font-size: 1em; letter-spacing: 1px;">--</span>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" style="font-size: 0.7em;"
+                        onclick="document.getElementById('sidebar-intel-display').style.display='none';document.getElementById('aircraft-search').value = '';">CLOSE</button>
+                </div>
+                <div id="sb-details" style="font-size: 0.75em; color: #ccc; line-height: 1.6;">WAITING FOR DATA...</div>
+            </div>
+            <div id="intel-window" style="display: none;"></div>
+            <div id="ammo-window" style="display: none;"></div>
+            <div id="manual-overlay"
+                style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5000; backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 20px;">
+
+                <div
+                    style="background: #0a0a0a; border: 1px solid #444; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 30px; font-family: 'IBM Plex Mono', monospace; position: relative; ">
+
+                    <div
+                        class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-4">
+                        <div style="color: #FF3B3B; font-weight: bold; letter-spacing: 3px;">
+                            STRATCOM_MANUAL</div>
+                    </div>
+
+                    <div class="manual-section mb-4">
+                        <h5 style="color: #fff; font-size: 0.9em; border-left: 3px solid #FF3B3B; padding-left: 10px;">
+                            01. ASSET TARGETING</h5>
+                        <p style="color: #888; font-size: 0.75em; line-height: 1.6; padding-left: 13px;">
+                            Open the <b>Visibility Panel</b> (Radioactive Icon) and enable <b>Launch Deck</b>. Select a
+                            missile card from the bottom slider. Click <b>"SET TARGET"</b> — the card will glow green.
+                            Click any location on the map to lock coordinates.
+                        </p>
+                    </div>
+
+                    <div class="manual-section mb-4">
+                        <h5 style="color: #fff; font-size: 0.9em; border-left: 3px solid #FF3B3B; padding-left: 10px;">
+                            02. YIELD CONFIGURATION</h5>
+                        <p style="color: #888; font-size: 0.75em; line-height: 1.6; padding-left: 13px;">
+                            Each unit can be equipped with different warheads. Use the <b>Yield Selector</b> on the card
+                            to choose between tactical and strategic loads. The <b>Impact Radii</b> (yellow/red circles)
+                            will adjust on the map to reflect the blast zone.
+                        </p>
+                    </div>
+
+                    <div class="manual-section mb-4">
+                        <h5 style="color: #fff; font-size: 0.9em; border-left: 3px solid #FF3B3B; padding-left: 10px;">
+                            03. EXECUTION & ABORT</h5>
+                        <p style="color: #888; font-size: 0.75em; line-height: 1.6; padding-left: 13px;">
+                            Once target is locked, press <b>"CONFIRM"</b>. The missile enters <b>IN-FLIGHT</b> status.
+                            Telemetry will show Time-to-Impact. If the launch was accidental, press <b>"ABORT"</b>
+                            immediately to neutralize the asset mid-air.
+                        </p>
+                    </div>
+
+                    <div class="text-center pt-3 border-top border-secondary">
+                        <button onclick="toggleManual()" class="btn btn-outline-danger btn-sm"
+                            style="width: 100%; border-radius: 0; font-size: 0.8em;">ACKNOWLEDGE OPERATIONAL
+                            PROTOCOLS</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid p-0">
+
+        <div id="visibility-panel"
+            style="display: none; position: fixed; top: 56px; right: 0; width: 280px; background: rgba(5,5,5,0.98); border-left: 1px solid #444; border-bottom: 1px solid #444; padding: 20px; z-index: 2500; backdrop-filter: blur(10px); color: white; font-family: 'IBM Plex Mono', monospace; box-shadow: -10px 0 30px rgba(0,0,0,0.5); animation: slideInRight 0.3s ease-out;">
+            <div style="font-size: 0.7em; color: #ffee00; margin-bottom: 5px; letter-spacing: 1px;">SYSTEM STATUS</div>
+            <div class="global-stats mb-3 border-bottom pb-3">
+                <div class="stat-item">
+                    <span id="g-deaths" class="text-danger" style="font-size: 1.2em;">0</span>
+                    <div class="stat-label" style="font-size: 0.6em; color: #ffffff;">TOTAL FATALITIES</div>
+                </div>
+                <div class="stat-item">
+                    <span id="g-active" class="text-danger" style="font-size: 1.2em;">0</span>
+                    <div class="stat-label" style="font-size: 0.6em; color: #ffffff;">MISSILES IN-FLIGHT</div>
+                </div>
+            </div>
+
+            <div style="font-size: 0.7em; color: #ffee00; margin-bottom: 5px; letter-spacing: 1px;">SYSTEM MANAGEMENT
+            </div>
+            <div class="d-grid gap-2 mb-3 border-bottom pb-3">
+                <button class="btn btn-outline-light btn-sm text-start" onclick="createNewCell()">ADD MISSILE</button>
+                <button class="btn btn-outline-danger btn-sm text-start" onclick="resetAll()">SYSTEM RESET</button>
+            </div>
+
+            <div style="font-size: 0.7em; color: #ffee00; margin-bottom: 8px; letter-spacing: 1px;">VISIBILITY OVERLAYS
+            </div>
+
+            <div class="mb-2 d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" checked
+                    onchange="document.getElementById('deck').style.display = this.checked ? 'flex' : 'none'"
+                    id="checkDeck">
+                <label class="form-check-label small" for="checkImpact">CONTROL_CONSOLE</label>
+            </div>
+            <div class="mb-2 d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" checked onchange="toggleLayer(siloLayer, this.checked)"
+                    id="checkSilo">
+                <label class="form-check-label small" for="checkSilo">ICBM_SILO</label>
+            </div>
+
+            <div class="mb-2 d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" checked onchange="toggleLayer(baseLayer, this.checked)"
+                    id="checkBase">
+                <label class="form-check-label small" for="checkBase">MILITARY_BASES</label>
+            </div>
+
+            <div class="mb-2 d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" checked
+                    onchange="toggleLayer(previewLayer, this.checked)" id="checkImpact">
+                <label class="form-check-label small" for="checkImpact">IMPACT_RADII</label>
+            </div>
+
+
+
+        </div>
+
+        <div id="map"></div>
+        <div id="deck" style="position: fixed; bottom: 20px; left: 20px; z-index: 4000;"></div>
+
+        <div class="detail-window" id="base-window" style="position: fixed;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;">
+            <div class="detail-header" id="base-name">INTEL_REPORT</div>
+            <div class="detail-body" id="base-content">SELECT ASSET FOR DATA...</div>
+            <button class="btn-sm" style="width:100%; margin-top:10px; background:#111; color:#666"
+                onclick="closeIntel()">CLOSE</button>
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+    <script src="aircraft.js"></script>
+
+</body>
+
+</html>

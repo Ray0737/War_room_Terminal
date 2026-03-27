@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPERATOR_ENROLLMENT | Tactical Comms</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-black">
+    <nav class="navbar border-bottom border-dark py-3">
+        <div class="container-fluid px-4">
+            <span class="fw-bold label-red tracking-wider">TACTICAL // COMMS.SYS</span>
+            <button class="btn btn-sm btn-outline-secondary rounded-0 text-uppercase"
+                onclick="window.location.href='index.html'">
+                <i class="bi bi-house-door me-1"></i> Abort
+            </button>
+        </div>
+    </nav>
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card p-4 p-md-5 border-dark shadow-lg" style="max-width: 480px; width: 95%;">
+            <div class="scanline"></div>
+            <h5 class="fw-bold mb-4 label-yellow text-uppercase tracking-wider">NEW_OPERATOR_ENROLLMENT</h5>
+
+            <div id="regMsg" class="alert d-none small mb-4 py-2 text-uppercase"></div>
+
+            <div class="mb-3">
+                <label class="small fw-bold mb-1 label-red">OPERATOR_ID (EMAIL)</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="USER@COMMS.SEC">
+            </div>
+
+            <div class="mb-4">
+                <label class="small fw-bold mb-1 label-red">ENCRYPTION_KEY (PASSWORD)</label>
+                <input type="password" id="regPass" class="form-control" placeholder="••••••••">
+                <div class="form-text mt-2 text-muted"
+                    style="font-size: 0.7rem; border-left: 2px solid #333; padding-left: 10px;">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    REQ: 8+ CHARS, 1 UPPER, 1 DIGIT, 1 SYMBOL (@$!%*?&).
+                </div>
+            </div>
+
+            <button id="regBtn" class="btn btn-primary w-100 mb-4 py-2" onclick="handleRegister()">
+                EXECUTE_ENROLLMENT
+            </button>
+
+            <div class="text-center">
+                <a href="login.html" class="small text-white text-decoration-none border-bottom border-secondary pb-1">
+                    <i class="bi bi-arrow-left me-1"></i> RETURN_TO_TERMINAL
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-black border border-warning rounded-0">
+                <div class="modal-body text-center p-5">
+                    <div class="text-warning display-3 mb-3">
+                        <i class="bi bi-broadcast-pin"></i>
+                    </div>
+                    <h4 class="fw-bold text-white text-uppercase mb-3">Enrollment Initialized</h4>
+                    <p class="text-muted small mb-4">
+                        A verification link has been broadcast to your terminal.
+                        Confirm the link to finalize your clearance level.
+                    </p>
+                    <button type="button" class="btn btn-primary w-100 py-2"
+                        onclick="window.location.href='login.html'">
+                        PROCEED_TO_LOGIN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+
+</html>

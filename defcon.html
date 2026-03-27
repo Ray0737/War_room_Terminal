@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATCOM | GLOBAL_DEFCON_MONITOR</title>
+
+    <!-- External Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #050505;
+        }
+
+        .defcon-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(217, 4, 41, 0.4) transparent;
+        }
+
+        .defcon-layout::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .defcon-layout::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .defcon-layout::-webkit-scrollbar-thumb {
+            background: rgba(217, 4, 41, 0.4);
+        }
+
+        .top-nav {
+            height: 65px;
+            background: rgba(0, 0, 0, 0.98);
+            border-bottom: 1px solid rgba(217, 4, 41, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 1000;
+            font-family: var(--font-main);
+        }
+
+        #worldMap {
+            flex-grow: 1;
+            min-height: 300px;
+            width: 100%;
+            background: #050505;
+        }
+
+        .bi-house {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .bi-house:hover {
+            color: var(--red);
+            filter: drop-shadow(0 0 5px var(--red));
+        }
+
+        /* Clock System */
+        .timezone-cluster {
+            display: flex;
+            gap: 35px;
+            align-items: center;
+        }
+
+        .tz-item {
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .tz-label {
+            font-size: 0.45rem;
+            color: rgba(255, 255, 255, 0.466);
+            letter-spacing: 1.5px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .tz-time {
+            font-size: 0.7rem;
+            color: white;
+            letter-spacing: 1px;
+            font-family: var(--font-main);
+            font-weight: 500;
+        }
+
+        .tz-time span {
+            font-size: 0.55rem;
+            opacity: 0.4;
+            margin-left: 3px;
+        }
+
+        .zulu-display {
+            font-size: 0.6rem;
+            color: var(--red);
+            letter-spacing: 2px;
+            font-weight: 800;
+            text-align: right;
+            border-right: 2px solid var(--red);
+            padding-right: 15px;
+            text-shadow: 0 0 10px rgba(217, 4, 41, 0.4);
+        }
+
+        .tactical-hud-clock {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 15px;
+            font-family: var(--font-mono);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+        }
+
+        .hud-label {
+            font-size: 0.4rem;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        /* ICBM Control Bar (Hidden by default) */
+        .control-bar {
+            display: none;
+            /* Summoned via toggle */
+            height: 40px;
+            background: #000;
+
+            align-items: center;
+            padding: 0 30px;
+            gap: 40px;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+            overflow: hidden;
+        }
+
+        .bi-radioactive {
+            color: #ffde03;
+            font-size: 1rem;
+        }
+
+
+        .stat-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.5rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 0.65rem;
+            color: var(--red);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .selector-group {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .tactical-select {
+            background: #0a0a0a;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.55rem;
+            padding: 2px 10px;
+            font-family: var(--font-main);
+            letter-spacing: 1px;
+            outline: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tactical-select:hover {
+            border-color: var(--red);
+        }
+
+        .tactical-select option {
+            background: #0a0a0a;
+            color: white;
+        }
+
+        /* ARM Protocol Styles */
+        .btn-arm {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.55rem;
+            padding: 2px 15px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .btn-arm.active {
+            background: #ff0000;
+            color: #fff;
+            border-color: #ff0000;
+        }
+
+        /* Missile Deck Styles */
+        .missile-deck {
+            min-height: 50px;
+            max-height: 180px;
+            background: rgba(0, 0, 0, 0.98);
+            border-bottom: 1px solid rgba(217, 4, 41, 0.2);
+            display: flex;
+            align-items: flex-start;
+            padding: 10px 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+            /* Wrap to new lines */
+            overflow-y: auto;
+            /* Vertical scroll if too many rows */
+            scrollbar-width: thin;
+            scrollbar-color: var(--red) transparent;
+        }
+
+        .missile-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 2px solid #ffde03;
+            padding: 4px 12px;
+            min-width: 320px;
+            font-family: var(--font-main);
+            font-size: 0.55rem;
+            color: #fff;
+            transition: 0.2s;
+        }
+
+        .missile-card.inflight {
+            border-left-color: var(--red);
+            background: rgba(217, 4, 41, 0.05);
+            border-color: rgba(217, 4, 41, 0.2);
+        }
+
+        .missile-card .id {
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.3);
+            width: 60px;
+        }
+
+        .missile-card .telemetry {
+            display: flex;
+            flex-direction: column;
+            width: 140px;
+            font-size: 0.45rem;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.1;
+        }
+
+        .missile-card .telemetry .coord {
+            color: #ffde03;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .missile-card .status {
+            color: #ffde03;
+            font-weight: 800;
+            width: 75px;
+            text-transform: uppercase;
+        }
+
+        .missile-card .timer {
+            color: var(--red);
+            font-weight: 900;
+            min-width: 65px;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+        }
+
+        .missile-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 0.5rem;
+            padding: 2px 10px;
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .missile-btn.launch {
+            background: #ff3e3e;
+            border-color: #ff3e3e;
+        }
+
+        .missile-btn.launch:hover {
+            background: #d90429;
+            box-shadow: 0 0 10px #ff3e3e;
+        }
+
+        .missile-btn:hover {
+            border-color: #fff;
+        }
+
+        .missile-btn.abort:hover {
+            background: rgba(217, 4, 41, 0.2);
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* New Missile (+) button hover */
+        .btn-new-missile {
+            transition: all 0.2s ease;
+        }
+
+        .btn-new-missile:hover {
+            background: rgba(255, 222, 3, 0.15) !important;
+            border-color: #ffde03 !important;
+            transform: scale(1.12);
+            color: #fff !important;
+        }
+
+        .btn-new-missile:active {
+            transform: scale(0.96);
+        }
+
+        /* Purge Sim button hover */
+        .btn-purge {
+            transition: all 0.2s ease;
+        }
+
+        .btn-purge:hover {
+            background: rgba(217, 4, 41, 0.2) !important;
+            border-color: var(--red) !important;
+            transform: scale(1.06);
+            color: #ff4444 !important;
+            letter-spacing: 2px;
+        }
+
+        .btn-purge:active {
+            transform: scale(0.96);
+        }
+
+        /* Tactical Popup Styling */
+        .leaflet-popup-content-wrapper {
+            background: rgba(5, 5, 5, 0.95) !important;
+            color: white !important;
+            border-radius: 0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            padding: 0 !important;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(5, 5, 5, 0.95) !important;
+        }
+
+        /* Tactical Triangle Markers - Synchronized to 12x10 (Match MIL BASE) */
+        .tactical-triangle {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid;
+            filter: none;
+            cursor: pointer;
+        }
+
+        .triangle-orange {
+            border-bottom-color: #ff5e00;
+        }
+
+        .triangle-white {
+            border-bottom-color: #ffffff;
+        }
+
+        .triangle-yellow {
+            border-bottom-color: #ffe000;
+        }
+
+        .leaflet-popup-content {
+            margin: 12px !important;
+            min-width: 180px !important;
+        }
+
+        /* Live Agent Tracker Pulsing Red Circle */
+        .agent-blip {
+            width: 12px;
+            height: 12px;
+            background: #ff0055;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7);
+            }
+
+            70% {
+                transform: scale(1.5);
+                box-shadow: 0 0 0 15px rgba(255, 0, 85, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 0, 85, 0);
+            }
+        }
+
+        /* Distance Measurement HUD — Minimal */
+        #measure-hud {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            background: rgba(20, 20, 20, 0.88);
+            border-left: 3px solid white;
+            padding: 7px 16px;
+            font-family: var(--font-main);
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 18px;
+            backdrop-filter: blur(8px);
+            pointer-events: auto;
+            animation: slideUpHUD 0.25s ease;
+            white-space: nowrap;
+        }
+
+        @keyframes slideUpHUD {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .measure-lbl {
+            font-size: 0.38rem;
+            color: white;
+            letter-spacing: 1.5px;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+        }
+
+        .measure-val {
+            font-size: 0.5rem;
+            color: white;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+        }
+
+        .measure-sep {
+            width: 1px;
+            height: 22px;
+            background: rgb(255, 255, 255);
+        }
+
+        .measure-dist-km {
+            font-size: 0.85rem;
+            font-weight: 900;
+            color: #ff8800;
+            font-family: var(--font-mono);
+            text-shadow: 0 0 8px #ff8800;
+            letter-spacing: 1px;
+        }
+
+        .measure-dist-nm {
+            font-size: 0.38rem;
+            color: white;
+            font-family: var(--font-main);
+            margin-top: 1px;
+            letter-spacing: 1px;
+        }
+
+        .measure-status {
+            font-size: 0.36rem;
+            color: white;
+            font-family: var(--font-main);
+            letter-spacing: 1px;
+        }
+
+        .btn-measure-clear {
+            background: transparent;
+            border: 1px solid #ff2400;
+            color: #ff2400;
+            font-size: 0.33rem;
+            padding: 2px 8px;
+            cursor: pointer;
+            font-family: var(--font-main);
+            letter-spacing: 1.5px;
+            transition: 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-measure-clear:hover {
+            border-color: #ff2400;
+            color: white;
+            background: #ff2400;
+        }
+
+        #toggle-measure.measure-active {
+            background: rgb(0, 0, 0) !important;
+            border-color: rgb(255, 255, 255) !important;
+        }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            /* --- TOP NAV (Clock Bar) --- */
+            .top-nav {
+                height: auto;
+                min-height: 50px;
+                padding: 8px 12px;
+                flex-wrap: nowrap;
+                gap: 0;
+            }
+
+            .top-nav>div:first-child {
+                flex: 0 0 auto !important;
+                margin-right: 10px;
+            }
+
+            .top-nav>.d-flex {
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+            }
+
+            .timezone-cluster {
+                gap: 18px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding: 6px 0;
+                scroll-snap-type: x mandatory;
+            }
+
+            .timezone-cluster::-webkit-scrollbar {
+                display: none;
+            }
+
+            .timezone-cluster .tz-item {
+                min-width: 65px;
+                flex-shrink: 0;
+                scroll-snap-align: start;
+            }
+
+            /* Zulu time item in clock bar for mobile */
+            .timezone-cluster .tz-item-zulu {
+                min-width: 80px;
+                flex-shrink: 0;
+                scroll-snap-align: start;
+                border-left: 2px solid var(--red);
+                padding-left: 12px;
+            }
+
+            .tz-label {
+                font-size: 0.4rem;
+            }
+
+            .tz-time {
+                font-size: 0.6rem;
+            }
+
+            .top-nav>div:last-child {
+                display: none !important;
+            }
+
+            /* --- SUB BAR (Tactical Secondary) --- */
+            #tactical-secondary-bar {
+                height: auto !important;
+                min-height: 42px;
+                padding: 6px 10px !important;
+                gap: 12px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                flex-wrap: nowrap !important;
+            }
+
+            #tactical-secondary-bar::-webkit-scrollbar {
+                display: none;
+            }
+
+            #planeHUD-container {
+                flex-shrink: 0;
+            }
+
+            #tactical-v-controls {
+                flex-shrink: 0;
+                gap: 12px !important;
+                flex-wrap: nowrap !important;
+                min-width: max-content;
+            }
+
+            #tactical-v-controls>div {
+                flex-shrink: 0;
+            }
+
+            #tactical-v-controls span {
+                font-size: 0.48rem !important;
+            }
+
+            /* Bigger touch targets for layer toggles */
+            #tactical-v-controls>div[id^="toggle-"] {
+                padding: 6px 4px;
+                min-height: 30px;
+            }
+
+            /* --- NUKE/CONTROL BAR --- */
+            .control-bar {
+                height: auto !important;
+                min-height: 40px;
+                padding: 8px 12px !important;
+                gap: 15px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                flex-wrap: nowrap !important;
+            }
+
+            .control-bar::-webkit-scrollbar {
+                display: none;
+            }
+
+            .stat-group {
+                gap: 12px;
+                flex-shrink: 0;
+            }
+
+            .stat-item {
+                flex-shrink: 0;
+            }
+
+            .selector-group {
+                gap: 10px;
+                flex-shrink: 0;
+                flex-wrap: nowrap;
+                margin-left: 0;
+                min-width: max-content;
+            }
+
+            .tactical-select {
+                font-size: 0.5rem;
+                padding: 4px 8px;
+                min-height: 28px;
+            }
+
+            .btn-arm {
+                padding: 4px 12px;
+                min-height: 28px;
+            }
+
+            /* --- MISSILE DECK --- */
+            .missile-deck {
+                padding: 8px 10px !important;
+                gap: 8px !important;
+            }
+
+            .missile-card {
+                min-width: 260px;
+                padding: 6px 10px;
+            }
+
+            /* --- HUD CLOCK OVERLAY --- hide on mobile, Zulu in clock bar */
+            .tactical-hud-clock {
+                display: none !important;
+            }
+
+            /* --- MEASURE HUD --- */
+            #measure-hud {
+                bottom: 10px;
+                padding: 6px 10px;
+                gap: 10px;
+                max-width: 95vw;
+                overflow-x: auto;
+            }
+
+            .measure-dist-km {
+                font-size: 0.7rem;
+            }
+
+            /* --- NEWS BAR --- */
+            #tactical-news-bar {
+                padding: 0 8px 0 12px !important;
+            }
+
+            /* --- NEWS PANEL --- */
+            #console-content-root {
+                flex-direction: column !important;
+            }
+
+            #stream-market>div {
+                flex-direction: row !important;
+            }
+
+            .market-card {
+                width: 300px !important;
+                padding: 15px !important;
+            }
+
+            .intel-news-title {
+                font-size: 0.6rem;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 400px) {
+            .top-nav {
+                padding: 6px 8px;
+            }
+
+            .timezone-cluster {
+                gap: 14px;
+            }
+
+            .timezone-cluster .tz-item {
+                min-width: 55px;
+            }
+
+            #tactical-secondary-bar {
+                padding: 4px 6px !important;
+                gap: 8px !important;
+            }
+
+            #tactical-v-controls {
+                gap: 8px !important;
+            }
+
+            .control-bar {
+                padding: 6px 8px !important;
+                gap: 10px !important;
+            }
+
+            .missile-card {
+                min-width: 220px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="defcon-layout">
+        <div class="top-nav">
+            <div style="flex: 1;">
+                <a href="menu.html" class="bi bi-house"></a>
+            </div>
+
+            <div class="d-flex align-items-center" style="min-width: 0; flex: 1;">
+                <div class="timezone-cluster">
+                    <!-- Zulu Time (relocated here for mobile scroll) -->
+                    <div class="tz-item tz-item-zulu">
+                        <div class="tz-label" style="color: var(--red);">ZULU_UTC</div>
+                        <div id="tz-zulu" class="tz-time" style="color: var(--red); font-weight: 900;">--:--:--</div>
+                    </div>
+                    <div class="tz-item">
+                        <div class="tz-label">WASHINGTON_DC</div>
+                        <div id="tz-us" class="tz-time">--:--:--</div>
+                    </div>
+                    <div class="tz-item">
+                        <div class="tz-label">BERLIN_GER</div>
+                        <div id="tz-ger" class="tz-time">--:--:--</div>
+                    </div>
+                    <div class="tz-item">
+                        <div class="tz-label">BANGKOK_TH</div>
+                        <div id="tz-th" class="tz-time">--:--:--</div>
+                    </div>
+                    <div class="tz-item">
+                        <div class="tz-label">BEIJING_CHN</div>
+                        <div id="tz-chn" class="tz-time">--:--:--</div>
+                    </div>
+                    <div class="tz-item">
+                        <div class="tz-label">TOKYO_JPN</div>
+                        <div id="tz-jpn" class="tz-time">--:--:--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Secondary Tactical Bar (Visibility & Plane Status) -->
+        <div id="tactical-secondary-bar" style="
+            background: rgba(0,0,0,0.95); border-bottom: 1px solid rgba(255,255,255,0.08);
+            height: 42px; display: flex; align-items: center; padding: 0 30px; gap: 40px;
+            font-family: var(--font-main); color: #fff; z-index: 999;
+        ">
+            <!-- Aircraft Status Slot -->
+            <div id="planeHUD-container" style="display: flex; align-items: center; gap: 15px;">
+                <!-- plane.js will inject content here -->
+            </div>
+
+            <!-- Divider -->
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.1);"></div>
+
+            <!-- Visibility Controls -->
+            <div id="tactical-v-controls"
+                style="display: flex; flex-direction: row; align-items: center; gap: 20px; font-size: 0.52rem;">
+                <div style="color: rgba(255,255,255,0.6); letter-spacing: 1px; font-size: 0.42rem; font-family: var(--font-main);
+                    ; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 12px;">
+                    LAYERS</div>
+
+                <div id="toggle-infra" onclick="toggleTacticalLayer('infra')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ff5e00; box-shadow: 0 0 4px #ff5e00;">
+                    </div>
+                    <span style="color: #ff5e00;">INFRA</span>
+                </div>
+                <div id="toggle-gov" onclick="toggleTacticalLayer('gov')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 4px #ffffff;">
+                    </div>
+                    <span style="color: #ffffff;">GOV</span>
+                </div>
+                <div id="toggle-airport" onclick="toggleTacticalLayer('airport')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ffe000; box-shadow: 0 0 4px #ffe000;">
+                    </div>
+                    <span style="color: #ffe000;">AIRPORT</span>
+                </div>
+                <div id="toggle-mil" onclick="toggleTacticalLayer('mil')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #4b7bec; box-shadow: 0 0 4px #4b7bec;">
+                    </div>
+                    <span style="color: #4b7bec;">BASE</span>
+                </div>
+                <div id="toggle-silo" onclick="toggleTacticalLayer('silo')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ff3e3e; box-shadow: 0 0 4px #ff3e3e;">
+                    </div>
+                    <span style="color: #ff3e3e;">SILO</span>
+                </div>
+                <div id="toggle-fleet" onclick="toggleTacticalLayer('fleet')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ff2400; box-shadow: 0 0 4px #ff2400;">
+                    </div>
+                    <span style="color: #ff2400;">FLEET</span>
+                </div>
+                <div id="toggle-agents" onclick="toggleTacticalLayer('agents')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ff0055; box-shadow: 0 0 4px #ff0055;">
+                    </div>
+                    <span style="color: #ff0055;">AGENTS</span>
+                </div>
+                <div id="toggle-plane" onclick="window.milTracker.toggle()"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 4px #ffffff;">
+                    </div>
+                    <span style="color: #fff;">FLIGHTS</span>
+                </div>
+
+                <!-- Launch Control Toggle Integrated into the bar -->
+                <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 12px;">
+                    <div id="toggle-nuke" onclick="toggleNukeControl()"
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; padding: 3px 12px; background: rgba(217, 4, 41, 0.15); border: 1px solid rgba(217, 4, 41, 0.25);">
+                        <span style="color: #ff4444; font-weight: 800; font-size: 0.42rem;">ICBM</span>
+                        <div class="status-led"
+                            style="width: 4px; height: 4px; border-radius: 50%; background: #444; box-shadow: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News Feed Toggle -->
+                <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 12px;">
+                    <div id="toggle-news" onclick="toggleNewsBar()"
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; padding: 3px 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15);">
+                        <span style="color: #ffffff; font-weight: 800; font-size: 0.42rem;">NEWS</span>
+                        <div class="status-led"
+                            style="width: 4px; height: 4px; border-radius: 50%; background: #444; box-shadow: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distance Meter Toggle -->
+                <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 12px;">
+                    <div id="toggle-measure" onclick="toggleMeasureMode()"
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; padding: 3px 12px; background: rgba(0, 243, 255, 0.05); border: 1px solid rgb(255, 255, 255);">
+                        <span style="color: #ffffff; font-weight: 800; font-size: 0.42rem;">DIST</span>
+                        <div class="status-led" id="measure-led"
+                            style="width: 4px; height: 4px; border-radius: 50%; background: #444; box-shadow: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-bar">
+            <i class="bi bi-radioactive"></i>
+
+            <div class="stat-group">
+                <div class="stat-item">
+                    <button id="armBtn" onclick="toggleArm()" class="btn-arm">UNARMED</button>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">FATALITIES:</span>
+                    <span id="totalFatalities" class="stat-value">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">INFLIGHT:</span>
+                    <span id="inflightAssets" class="stat-value">--</span>
+                </div>
+            </div>
+
+            <div class="selector-group">
+                <div class="stat-item">
+                    <span class="stat-label">ORIGIN:</span>
+                    <select id="launchOrigin" class="tactical-select">
+                        <option value="48.4150,-101.3270">MINOT_AFB (USA)</option>
+                        <option value="47.5053,-111.1839">MALMSTROM_AFB (USA)</option>
+                        <option value="41.1500,-104.8667">FE_WARREN_AFB (USA)</option>
+                        <option value="54.02,35.78">KOZELSK_SILO (RUS)</option>
+                        <option value="51.05,59.85">DOMBAROVSKIY (RUS)</option>
+                        <option value="38.9,111.4">WUZHAI_BASE (CHN)</option>
+                    </select>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">YIELD:</span>
+                    <select id="yieldPreset" class="tactical-select" onchange="toggleManualYield()"
+                        style="min-width: 160px;">
+                        <option value="15">15 KT (HIROSHIMA)</option>
+                        <option value="100">100 KT (W76)</option>
+                        <option value="350" selected>350 KT (MM-III)</option>
+                        <option value="1200">1.2 MT (B83)</option>
+                        <option value="50000">50 MT (TSAR)</option>
+                        <option value="manual">MANUAL_ENTRY</option>
+                    </select>
+                    <div id="manualYieldWrap" style="display: none; gap: 5px; align-items: center;">
+                        <input type="number" id="manualYieldVal" class="tactical-select" style="width: 75px;"
+                            placeholder="VAL">
+                        <select id="manualYieldUnit" class="tactical-select" style="width: 60px;">
+                            <option value="kt">KT</option>
+                            <option value="mt">MT</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">TARGETING:</span>
+                    <span id="targetStatusText" class="stat-value"
+                        style="color: rgba(255,255,255,0.2); font-size: 0.5rem;">PROTOCOL_LOCKED</span>
+                </div>
+                <button onclick="createNewMissile()" class="tactical-select btn-new-missile"
+                    style="border-color: #ffde03; color: #ffde03; width: 30px; font-weight: 900;">+</button>
+                <button onclick="clearAllSims()" class="tactical-select btn-purge"
+                    style="border-color: rgba(217, 4, 41, 0.5); color: var(--red);">PURGE_SIM</button>
+            </div>
+        </div>
+
+        <div id="missileDeck" class="missile-deck" style="display: none;">
+            <!-- Active Missiles Populated Dynamically -->
+        </div>
+
+        <div id="worldMap" style="position: relative; flex-grow: 1;">
+            <!-- Overlay Clock (Top Right of Map) -->
+            <div class="tactical-hud-clock" style="
+                position: absolute; top: 15px; right: 15px; z-index: 1000;
+                background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 6px 12px; pointer-events: none; backdrop-filter: blur(5px);
+                text-align: right; font-family: var(--font-mono);
+            ">
+            </div>
+
+            <!-- Distance Measurement HUD — Multi-Point -->
+            <div id="measure-hud">
+                <!-- Point Count -->
+                <div style="display:flex; flex-direction:column; gap:2px; align-items:center;">
+                    <div class="measure-lbl">PTS</div>
+                    <div class="measure-dist-km" id="measure-pts-val" style="font-size:0.9rem;">0</div>
+                </div>
+                <div class="measure-sep"></div>
+                <!-- Last Point -->
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <div class="measure-lbl">LAST</div>
+                    <div class="measure-val" id="measure-last-val">---.----, ---.----</div>
+                </div>
+                <div class="measure-sep"></div>
+                <!-- Total Distance readout -->
+                <div style="display:flex; flex-direction:column; align-items:center; gap:1px;">
+                    <div class="measure-dist-km" id="measure-dist-km">-- KM</div>
+                    <div class="measure-dist-nm" id="measure-dist-nm">-- NM</div>
+                </div>
+                <div class="measure-sep"></div>
+                <!-- Status + clear -->
+                <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+                    <div class="measure-status" id="measure-status-text">SET ORIGIN</div>
+                    <button class="btn-measure-clear" onclick="clearMeasurement()">CLR</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- STRATEGIC MULTI-DOMAIN CONSOLE (Footer Header) -->
+        <div id="tactical-news-bar" style="
+            display: none; height: 44px; background: rgba(0,0,0,0.99); 
+            border-top: 1px solid rgba(217, 4, 41, 0.6); align-items: center;
+            padding: 0 15px 0 30px; font-family: var(--font-main); color: #fff;
+            overflow: hidden; z-index: 1001; position: relative;
+        ">
+            <div style="display: flex; align-items: center; gap: 20px; width: 100%;">
+                <div
+                    style="display: flex; align-items: center; gap: 10px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px;">
+                    <button id="btn-toggle-market" onclick="toggleConsoleCategory('market')"
+                        style="background: rgba(217, 4, 41, 0.15); border: 1px solid rgba(217,4,41,0.4); color: var(--red); font-size: 0.45rem; padding: 4px 12px; font-weight: 900; cursor: pointer; letter-spacing: 1px; transition: 0.2s;">[MARKET]</button>
+                    <button id="btn-toggle-intel" onclick="toggleConsoleCategory('intel')"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); font-size: 0.45rem; padding: 4px 12px; font-weight: 900; cursor: pointer; letter-spacing: 1px; transition: 0.2s;">[INTEL]</button>
+                </div>
+
+                <div id="news-ticker-container"
+                    style="flex-grow: 1; overflow: hidden; height: 100%; display: flex; align-items: center;">
+                    <div id="news-ticker-content"
+                        style="white-space: nowrap; font-size: 0.5rem; color: rgba(255,255,255,0.9); letter-spacing: 1px; font-weight: 600;">
+                        INITIALIZING STRATEGIC MULTI-DOMAIN CONSOLE...
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div
+                        style="font-size: 0.4rem; color: rgba(255,255,255,0.3); white-space: nowrap; font-weight: 700;">
+                        LIVE //
+                        CRYSTAL_PALACE // 2.4X</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONSOLE CONSOLE PANEL (Stacked Below Map - Supreme Scale) -->
+        <div id="tactical-news-panel" style="
+            display: none; height: 0; background: rgba(5,5,5,0.99);
+            border-top: 1px solid rgba(217,4,41,0.5);
+            z-index: 1000; overflow: hidden;
+            backdrop-filter: blur(25px); transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+        ">
+            <div id="console-content-root"
+                style="display: flex; height: 100%; border-top: 1px solid rgba(255,255,255,0.05);">
+                <!-- MARKET STREAM (Left) -->
+                <div id="stream-market"
+                    style="flex: 1; display: none; border-right: 1px solid rgba(255,255,255,0.1); overflow-x: auto; overflow-y: hidden;">
+                    <div style="display: flex; height: 100%; min-width: max-content;">
+                        <div class="market-card" id="card-LMT">
+                            <div class="market-label">LMT // LOCKHEED_MARTIN</div>
+                            <div class="market-meta">SECTOR: DEF_AERO // GRADE: AAA // NYSE</div>
+                            <div class="market-price" id="price-LMT">$---.--</div>
+                            <div class="market-graph-container"><canvas id="graph-LMT"></canvas></div>
+                        </div>
+                        <div class="market-card" id="card-NOC">
+                            <div class="market-label">NOC // NORTHROP_GRUMMAN</div>
+                            <div class="market-meta">SECTOR: SPACE_SYS // GRADE: AAA // NYSE</div>
+                            <div class="market-price" id="price-NOC">$---.--</div>
+                            <div class="market-graph-container"><canvas id="graph-NOC"></canvas></div>
+                        </div>
+                        <div class="market-card" id="card-BA">
+                            <div class="market-label">BA // BOEING_DEFENSE</div>
+                            <div class="market-meta">SECTOR: STRIKE_MOB // GRADE: AA+ // NYSE</div>
+                            <div class="market-price" id="price-BA">$---.--</div>
+                            <div class="market-graph-container"><canvas id="graph-BA"></canvas></div>
+                        </div>
+                        <div class="market-card" id="card-RTX">
+                            <div class="market-label">RTX // RAYTHEON_TECH</div>
+                            <div class="market-meta">SECTOR: MISSILE_DEF // GRADE: AAA // NYSE</div>
+                            <div class="market-price" id="price-RTX">$---.--</div>
+                            <div class="market-graph-container"><canvas id="graph-RTX"></canvas></div>
+                        </div>
+                        <div class="market-card" id="card-PLTR">
+                            <div class="market-label" style="color: #6c5ce7;">PLTR // PALANTIR_INTEL</div>
+                            <div class="market-meta">SECTOR: AI_TACTICAL // GRADE: A- // NYSE</div>
+                            <div class="market-price" id="price-PLTR">$---.--</div>
+                            <div class="market-graph-container"><canvas id="graph-PLTR"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTEL STREAM (Right - Single Feed) -->
+                <div id="stream-intel" style="flex: 1; display: none; background: #000; overflow: hidden;">
+                    <div style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="intel-grid-header" style="background: rgba(217,4,41,0.05);">
+                            <span style="color: var(--red);">GLOBAL_MILITARY_INTELLIGENCE_FEED</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span id="intel-status-pill"
+                                    style="font-size: 0.4rem; padding: 2px 6px; background: rgba(0,255,0,0.1); border: 1px solid rgba(0,255,0,0.3); color: #0f0;">UPLINK_ESTABLISHED</span>
+                                <button class="grid-go-btn" onclick="window.smdc.fetchLiveIntel()">REFRESH_FEED</button>
+                            </div>
+                        </div>
+                        <div id="intel-news-container"
+                            style="flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="color: rgba(255,255,255,0.4); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; margin-top: 20px;"
+                                class="blink-text">
+                                [ CONNECTING TO INTELLIGENCE NETWORK... ]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .market-card {
+                width: 480px;
+                border-right: 1px solid rgba(255, 255, 255, 0.03);
+                padding: 25px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+                transition: 0.3s ease;
+                flex-shrink: 0;
+            }
+
+            .market-card:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .market-label {
+                font-family: var(--font-main);
+                font-size: 0.5rem;
+                color: #fff;
+                font-weight: 900;
+                letter-spacing: 1.5px;
+            }
+
+            .market-meta {
+                font-family: var(--font-main);
+                font-size: 0.35rem;
+                color: rgba(255, 255, 255, 0.3);
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            }
+
+            .market-price {
+                font-family: var(--font-mono);
+                font-size: 1.1rem;
+                color: #fff;
+                font-weight: 900;
+                margin-top: 10px;
+            }
+
+            .market-graph-container {
+                flex-grow: 1;
+                position: relative;
+                width: 100%;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+                margin-top: 15px;
+                padding-top: 10px;
+            }
+
+            .market-graph-container canvas {
+                width: 100%;
+                height: 100%;
+            }
+
+            #stream-market::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            #stream-market::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.5);
+            }
+
+            #stream-market::-webkit-scrollbar-thumb {
+                background: var(--red);
+            }
+
+            .intel-grid-item {
+                background: #050505;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                position: relative;
+            }
+
+            .intel-grid-header {
+                background: #0a0a0a;
+                padding: 10px 18px;
+                font-family: var(--font-main);
+                font-size: 0.5rem;
+                color: rgba(255, 255, 255, 0.4);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+                font-weight: 900;
+                letter-spacing: 1px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: 0.3s;
+            }
+
+            .grid-go-btn {
+                background: transparent;
+                border: 1px solid rgba(217, 4, 41, 0.3);
+                color: var(--red);
+                font-size: 0.35rem;
+                padding: 2px 8px;
+                cursor: pointer;
+                font-weight: 900;
+                border-radius: 1px;
+                letter-spacing: 1px;
+                transition: 0.2s;
+            }
+
+            .grid-go-btn:hover {
+                background: var(--red);
+                color: #fff;
+                border-color: var(--red);
+            }
+
+            .intel-iframe {
+                flex-grow: 1;
+                border: none;
+                width: 100%;
+                height: 100%;
+                filter: grayscale(0.2) contrast(1.1);
+            }
+
+            .intel-grid-item:hover .intel-grid-header {
+                color: #fff;
+                background: #111;
+                border-bottom-color: var(--red);
+            }
+
+            /* Live News Cards Styling */
+            .intel-news-card {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-left: 2px solid var(--red);
+                padding: 12px 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                transition: 0.2s ease;
+                cursor: pointer;
+            }
+
+            .intel-news-card:hover {
+                background: rgba(217, 4, 41, 0.1);
+                border-color: rgba(217, 4, 41, 0.3);
+            }
+
+            .intel-news-meta {
+                display: flex;
+                justify-content: space-between;
+                font-family: var(--font-main);
+                font-size: 0.45rem;
+                color: rgba(255, 255, 255, 0.4);
+                letter-spacing: 1px;
+                text-transform: uppercase;
+            }
+
+            .intel-news-title {
+                font-family: var(--font-main);
+                font-size: 0.75rem;
+                color: #fff;
+                font-weight: 700;
+                line-height: 1.3;
+            }
+
+            .intel-news-desc {
+                font-family: var(--font-main);
+                font-size: 0.55rem;
+                color: rgba(255, 255, 255, 0.6);
+                line-height: 1.4;
+                margin-top: 4px;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .blink-text {
+                animation: blinker 1.5s linear infinite;
+            }
+
+            @keyframes blinker {
+                50% {
+                    opacity: 0.2;
+                }
+            }
+
+            /* Custom Scrollbar for News */
+            #intel-news-container::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            #intel-news-container::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.3);
+            }
+
+            #intel-news-container::-webkit-scrollbar-thumb {
+                background: var(--red);
+            }
+        </style>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="intel_data.js"></script>
+    <script src="news.js"></script>
+    <script src="defcon.js"></script>
+    <script src="tracker.js"></script>
+    <script src="plane.js"></script>
+
+    <script>
+        function updateClocks() {
+            const timeZones = [
+                { id: 'tz-us', zone: 'America/New_York' },
+                { id: 'tz-ger', zone: 'Europe/Berlin' },
+                { id: 'tz-th', zone: 'Asia/Bangkok' },
+                { id: 'tz-jpn', zone: 'Asia/Tokyo' },
+                { id: 'tz-chn', zone: 'Asia/Shanghai' }
+            ];
+
+            const now = new Date();
+
+            timeZones.forEach(tz => {
+                const timeString = now.toLocaleTimeString('en-US', {
+                    timeZone: tz.zone,
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                const el = document.getElementById(tz.id);
+                if (el) {
+                    el.innerHTML = timeString.replace(/:/g, '<span>:</span>');
+                }
+            });
+
+            // Central Zulu Clock
+            const zuluTime = now.toLocaleTimeString('en-GB', {
+                timeZone: 'UTC',
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const zuluEl = document.getElementById('zulu-main');
+            if (zuluEl) zuluEl.innerText = `${zuluTime} ZULU`;
+
+            // Zulu in clock bar (relocated)
+            const zuluBarEl = document.getElementById('tz-zulu');
+            if (zuluBarEl) zuluBarEl.innerHTML = zuluTime.replace(/:/g, '<span>:</span>');
+
+            // Sub-header full ISO update (hidden but kept for logic)
+            const zuluIso = now.toISOString().replace(/T/, ' // ').replace(/\..+/, ' ZULU');
+            const sub = document.getElementById('subTimestamp');
+            if (sub) sub.innerText = zuluIso;
+        }
+
+        updateClocks();
+        setInterval(updateClocks, 1000);
+    </script>
+</body>
+
+</html>
+>

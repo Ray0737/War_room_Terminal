@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Intania Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js" defer></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-black">
+    <nav class="navbar border-bottom border-dark py-3">
+        <div class="container-fluid">
+            <span class="fw-bold label-red">TACTICAL // COMMS.SYS</span>
+        </div>
+    </nav>
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%;">
+            <div class="scanline"></div>
+            <h5 class="fw-bold mb-4 label-yellow">TERMINAL_ACCESS</h5>
+
+            <div class="mb-3">
+                <label class="small fw-bold mb-1">USER_ID (EMAIL)</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="ID_ALPHA">
+            </div>
+
+            <div class="mb-4">
+                <label class="small fw-bold mb-1">SEC_CODE (PASSWORD)</label>
+                <input type="password" id="loginPass" class="form-control" placeholder="********">
+            </div>
+
+            <div id="errorMsg" class="alert alert-danger d-none small mb-3"></div>
+
+            <button id="loginBtn" class="btn btn-primary w-100">INITIALIZE_LOGIN</button>
+
+            <div class="text-center mt-4">
+                <a href="register.html"
+                    class="small text-white text-decoration-none border-bottom border-secondary">CREATE_NEW_OPERATOR</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

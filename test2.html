@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATEGIC COMMAND | Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Failsafe: Redirection before page even renders if no session token
+        if (!localStorage.getItem('sb-pimmlgtqkkmghiamuvel-auth-token')) {
+            window.location.replace('index.html');
+        }
+    </script>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand navbar-strat fixed-top"
+        style="background: rgba(0, 0, 0, 0.05); border-bottom: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); height: 65px;">
+        <div class="container-fluid px-4">
+
+            <span class="navbar-brand fw-bold text-white d-flex align-items-center gap-3 m-0"
+                style="font-size: 0.8rem; letter-spacing: 3px; opacity: 1;">
+
+                <span
+                    class="d-none d-lg-inline border-start ps-3 border-secondary border-opacity-50 d-flex align-items-center gap-2">
+                    <i class="bi bi-airplane text-white opacity-75"
+                        style="font-size: 0.9rem; transform: rotate(90deg);"></i>
+                    STRAT_COM
+                </span>
+            </span>
+
+            <ul class="navbar-nav mx-auto gap-1 gap-md-4">
+                <li class="nav-item">
+                    <a class="nav-link p-2 text-white opacity-50 d-flex align-items-center gap-2"
+                        onclick="switchTab('calendar', this)"
+                        style="cursor: pointer; font-size: 0.75rem; letter-spacing: 1.5px;">
+                        <i class="bi bi-calendar3"></i>
+                        <span class="d-none d-sm-inline">CL</span>
+                    </a>
+                </li>
+                <li class="nav-item position-relative">
+                    <a class="nav-link p-2 text-white opacity-50 d-flex align-items-center gap-2"
+                        onclick="switchTab('chatting', this)"
+                        style="cursor: pointer; font-size: 0.75rem; letter-spacing: 1.5px;">
+                        <i class="bi bi-broadcast-pin"></i>
+                        <span class="d-none d-sm-inline">EAM</span>
+                    </a>
+                    <span
+                        class="position-absolute top-50 start-100 translate-middle p-1 bg-danger border-0 rounded-circle d-none"
+                        id="globalNotifBadge" style="width: 6px; height: 6px; margin-left: -5px;"></span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link p-2 text-white opacity-50 d-flex align-items-center gap-2"
+                        onclick="switchTab('memo', this)"
+                        style="cursor: pointer; font-size: 0.75rem; letter-spacing: 1.5px;">
+                        <i class="bi bi-file-earmark-medical"></i>
+                        <span class="d-none d-sm-inline">UMF-013</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link p-2 text-white opacity-50 d-flex align-items-center gap-2"
+                        onclick="switchTab('mil_db', this)" style="font-size: 0.75rem; letter-spacing: 1.5px;">
+                        <i class="bi bi-database-fill-lock"></i>
+                        <span class="d-none d-sm-inline">MIL</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link p-2 text-white opacity-50 d-flex align-items-center gap-2"
+                        onclick="switchTab('defcon_pred', this)" style="font-size: 0.75rem; letter-spacing: 1.5px;">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <span class="d-none d-sm-inline">DEFCON</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-4">
+                <div class="d-none d-md-flex flex-column align-items-end" style="line-height: 1;">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="opacity-50"
+                            style="font-size: 0.55rem; letter-spacing: 2px; color: #ffffff;">SECURED_LINE</span>
+                        <span
+                            style="width: 4px; height: 4px; background: #00ff41; border-radius: 50%; box-shadow: 0 0 5px #00ff41;"></span>
+                    </div>
+                    <span id="callsignDisplay" class="text-white fw-bold"
+                        style="font-size: 0.6rem; letter-spacing: 2px; opacity: 0.9;font-family: var(--font-main)">ID_PENDING</span>
+                </div>
+
+                <button class="btn btn-danger btn-sm rounded-0 d-flex align-items-center gap-2 terminate-btn"
+                    id="logoutBtn">
+                    <i class="bi bi-power"></i>
+                    <span>Terminate</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container container-main">
+        <section id="calendar" class="section-content active">
+            <div class="d-flex justify-content-between align-items-end mb-4 px-1">
+                <div class="d-flex align-items-end gap-4">
+                    <div class="position-relative">
+                        <div class="d-flex align-items-baseline gap-2 mb-1">
+                            <span class="text-danger fw-bold" style="font-size: 0.5rem; letter-spacing: 2px;">●</span>
+                            <span class="label-micro"
+                                style="font-size: 0.55rem; letter-spacing: 3px; font-family: var(--font-main); color: white;">Management
+                                System</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <h2 id="calendarMonthYear" class="mb-0 text-white"
+                                style="letter-spacing: 3px; font-size: 1.4rem; line-height: 1; text-transform: uppercase; border-left: 2px solid #d90429; padding-left: 12px;">
+                                MARCH 2026
+                            </h2>
+                            <div class="d-flex flex-column justify-content-center border-start border-secondary border-opacity-25 ps-3"
+                                style="height: 20px;">
+                                <span class="opacity-25"
+                                    style="font-size: 0.5rem; letter-spacing: 1px; line-height: 1;">STATUS:
+                                    ACTIVE</span>
+                                <span class="opacity-25"
+                                    style="font-size: 0.5rem; letter-spacing: 1px; line-height: 1;">SYNC: STABLE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-1"
+                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
+
+                        <button class="btn btn-link text-white p-0 d-flex align-items-center justify-content-center"
+                            style="width: 35px; height: 30px; text-decoration: none; transition: 0.2s; border-radius: 0;"
+                            onclick="changeMonth(-1)"
+                            onmouseover="this.style.background='rgba(217, 4, 41, 0.2)'; this.style.color='#d90429'"
+                            onmouseout="this.style.background='transparent'; this.style.color='white'">
+                            <span style="font-size: 0.8rem; font-weight: bold; opacity: 0.7;">&#10094;</span>
+                        </button>
+
+                        <div style="width: 1px; height: 15px; background: rgba(255,255,255,0.1);"></div>
+
+                        <button class="btn btn-link text-white p-0 d-flex align-items-center justify-content-center"
+                            style="width: 35px; height: 30px; text-decoration: none; transition: 0.2s; border-radius: 0;"
+                            onclick="changeMonth(1)"
+                            onmouseover="this.style.background='rgba(217, 4, 41, 0.2)'; this.style.color='#d90429'"
+                            onmouseout="this.style.background='transparent'; this.style.color='white'">
+                            <span style="font-size: 0.8rem; font-weight: bold; opacity: 0.7;">&#10095;</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="btn btn-danger btn-sm rounded-0"
+                    style="font-size: 0.55rem; letter-spacing: 2px; padding: 4px 15px; border-color: rgba(217, 4, 41, 0.3);"
+                    data-bs-toggle="modal" data-bs-target="#eventModal" onclick="clearEventModal()">
+                    [+] NEW_ENTRY
+                </button>
+            </div>
+
+            <div class="calendar-days-header mb-2"
+                style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+                <div>SUN</div>
+                <div>MON</div>
+                <div>TUE</div>
+                <div>WED</div>
+                <div>THU</div>
+                <div>FRI</div>
+                <div>SAT</div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <section id="chatting" class="section-content">
+            <div class="row g-4">
+                <div class="col-md-4" id="chatDirectory">
+                    <div style="height: 75vh; display: flex; flex-direction: column; background: transparent;">
+                        <div class="label-micro mb-2 opacity-50" style="font-family: var(--font-main);color: white;">
+                            DIRECTORY_INDEX
+                        </div>
+                        <input type="text" id="searchUser" class="form-control mb-3 text-white"
+                            placeholder="SEARCH_UNIT..."
+                            style="font-size: 0.65rem; background: rgba(255,255,255,0.03); border: none; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 0;">
+                        <div id="userList" class="d-flex flex-column gap-1" style="flex-grow: 1; overflow-y: auto;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8 d-none" id="activeChatPane">
+                    <div style="height: 75vh; display: flex; flex-direction: column; background: transparent;">
+
+                        <div
+                            class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-white border-opacity-10">
+                            <h6 class="fw-bold text-white mb-0" id="chatTargetName" style="letter-spacing: 2px;">---
+                            </h6>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-danger btn-sm rounded-0 border-0 fw-bold" id="purgeChatBtn"
+                                    style="font-size: 0.55rem; color: white; padding: 4px 10px;">PURGE_HISTORY</button>
+                                <button class="btn btn-danger btn-sm rounded-0 border-0 fw-bold" id="closeChatBtn"
+                                    style="font-size: 0.55rem; color: white; padding: 4px 10px;">DISCONNECT</button>
+                            </div>
+                        </div>
+
+                        <div id="messageFeed" class="flex-grow-1 mb-3 px-2"
+                            style="overflow-y: auto; scrollbar-width: none;">
+                        </div>
+
+                        <form id="eamForm"
+                            class="d-flex gap-2 align-items-center pt-2 border-top border-white border-opacity-10">
+                            <span class="text-danger fw-bold" style="font-size: 0.7rem;">CMD></span>
+                            <input type="text" id="eamInput" class="form-control flex-grow-1 text-white shadow-none"
+                                placeholder="TRANSMIT_DATA..."
+                                style="background: transparent; border: none; color: white; font-size: 0.7rem; box-shadow: none;">
+                            <button type="submit" class="btn btn-danger btn-sm rounded-0 border-0 fw-bold"
+                                style="font-size: 0.6rem; color: white; padding: 5px 15px;">TRANSMIT</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="memo" class="section-content">
+            <div class="strat-card mb-4">
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="label-micro" style="font-family: var(--font-main);">ENTRY_INITIALIZATION</span>
+                    <div class="d-flex gap-2">
+                        <div class="type-pill active" id="typePers" onclick="setEntryType('personnel')">PERSONNEL_INTEL
+                        </div>
+                        <div class="type-pill" id="typeJourn" onclick="setEntryType('journal')">TACTICAL_JOURNAL</div>
+                    </div>
+                </div>
+
+                <form id="intelForm">
+                    <div id="personnelFields" class="row g-3">
+                        <div class="col-md-8"><input type="text" id="fullName" class="form-control intel-input"
+                                placeholder="FULL_NAME"></div>
+                        <div class="col-md-4"><input type="text" id="callsign" class="form-control intel-input"
+                                placeholder="CALLSIGN"></div>
+                        <div class="col-md-4"><input type="text" id="idCode" class="form-control intel-input"
+                                placeholder="ID_CODE (e.g. A-735)"></div>
+                        <div class="col-md-4"><input type="text" id="dob" class="form-control intel-input"
+                                placeholder="BIRTHDATE"></div>
+                        <div class="col-md-4"><input type="text" id="contact" class="form-control intel-input"
+                                placeholder="CONTACT_INFO"></div>
+                        <div class="col-12"><input type="text" id="address" class="form-control intel-input"
+                                placeholder="PHYSICAL_ADDRESS / COORDINATES"></div>
+                    </div>
+
+                    <div id="journalFields" class="row g-3 d-none">
+                        <div class="col-12"><input type="text" id="journalTitle" class="form-control intel-input"
+                                placeholder="OPERATION_HEADING"></div>
+                    </div>
+
+                    <div class="col-12 mt-3"><textarea id="comments" class="form-control intel-input" rows="3"
+                            placeholder="ADDITIONAL_NOTES_&_INTEL"></textarea></div>
+
+                    <div class="col-12 mt-4 text-end">
+                        <button type="submit" class="btn btn-outline-danger btn-sm border-0 px-4"
+                            style="font-size: 0.65rem; letter-spacing: 2px;">
+                            [ COMMIT ]
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mt-4 pt-3 border-top border-secondary" style="--bs-border-opacity: .1;">
+                <ul class="nav nav-pills mb-3 d-flex gap-2" id="dossierActionTabs">
+                    <li class="nav-item">
+                        <button class="type-pill active" onclick="switchDossierSubTab('adder', this)">[ ENTRY_INPUT
+                            ]</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="type-pill" onclick="switchDossierSubTab('maintenance', this)">[
+                            SYSTEM_MAINTENANCE ]</button>
+                    </li>
+                </ul>
+
+                <div id="maintenancePane" class="d-none">
+                    <div class="p-4 bg-transparent border-top border-secondary border-opacity-25 mt-3">
+                        <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
+                            <div class="label-micro text-danger"
+                                style="font-size: 0.8rem; letter-spacing: 3px;font-family: var(--font-main)">
+                                SYSTEM_SELF_DESTRUCT_SEQUENCE</div>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <p class="text-white fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 1px;">CRITICAL
+                                WARNING:
+                                MASS_DATA_DESTRUCTION_PROTOCOL</p>
+                            <p class="text-white mx-auto" style="font-size: 0.7rem; max-width: 400px; opacity: 0.6;">
+                                Executing this command will transmit a wipe signal to the STRATEGIC COMMAND core.
+                                All archived personnel intel and tactical logs will be permanently incinerated and
+                                de-indexed.
+                                THIS ACTION IS IRREVERSIBLE.
+                            </p>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-2 mt-4">
+                            <button class="btn btn-outline-danger btn-sm py-1 px-3 rounded-0" data-bs-toggle="modal"
+                                data-bs-target="#authModal" style="font-size: 0.7rem; letter-spacing: 2px;">
+                                [ INITIATE_PURGE_SEQUENCE ]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="authModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                    <div class="modal-content bg-black rounded-0 shadow">
+                        <div class="modal-body p-4 text-center">
+                            <div class="label-micro text-danger mb-3"
+                                style="font-size: 0.7rem; font-family: var(--font-main);">AUTHORIZATION
+                            </div>
+                            <p class="text-white opacity-50 mb-4" style="font-size: 0.65rem;">ENTER FAILSAFE KEY TO
+                                PROCEED WITH DATA PURGE</p>
+
+                            <input type="password" id="failsafeInput" class="form-control intel-input text-center mb-4"
+                                style="font-size: 1rem; letter-spacing: 4px; padding: 4px;" placeholder="********">
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-warning btn-sm w-100 rounded-0"
+                                    style="font-size: 0.65rem;" data-bs-dismiss="modal">ABORT</button>
+                                <button class="btn btn-danger btn-sm w-100 rounded-0" style="font-size: 0.65rem;"
+                                    id="confirmPurgeBtn">VERIFY_KEY</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br><br>
+            <div class="label-micro mb-2">ARCHIVED_ENTRIES</div>
+            <div id="dossierList"></div>
+        </section>
+        <section id="defcon_pred" class="section-content">
+            <div class="strat-card p-4" style="background: rgba(255, 255, 255, 0.03); 
+               backdrop-filter: blur(8px);
+               transition: all 0.4s ease;">
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 8px; height: 8px; background: #d90429; border-radius: 50%; ">
+                        </div>
+                        <span class="text-white"
+                            style="font-size: 0.7rem; letter-spacing: 2px; font-family: var(--font-main);">DEFCON //
+                            DEFENSE_READINESS_LEVEL</span>
+                    </div>
+                </div>
+
+                <div class="row align-items-center g-0">
+                    <div class="col-md-4 text-center border-end border-white border-opacity-10">
+                        <h1 id="defconLevel" class="display-2 mb-0"
+                            style="color: #ffffff; font-family: var(--font-main); line-height: 1;">--</h1>
+                        <div id="defconStatus"
+                            style="font-size: 0.55rem; color: #ffffff; letter-spacing: 2px; margin-top: 5px;">
+                            INITIALIZING_OSINT</div>
+                    </div>
+
+                    <div class="col-md-8 ps-4">
+                        <div
+                            style="font-size: 0.5rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; letter-spacing: 1px;">
+                            INTELLIGENCE_SUMMARY</div>
+                        <p id="threatSummary" class="text-white opacity-75 mb-0"
+                            style="font-size: 0.65rem; line-height: 1.8; font-family: var(--font-main); max-width: 90%;">
+                            Fetching real-time OSINT data stream...
+                            <span class="d-block mt-1" style="color: #666;">Waiting for secure handshake.</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="mil_db" class="section-content">
+            <div class="strat-card bg-transparent border-0 p-0">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="label-micro text-white" style="letter-spacing: 2px;font-family: var(--font-main);">
+                        UNITED SATES MILITARY EQUIPMENT DATABASE
+                    </div>
+                    <span class="badge " id="assetCount" style="font-size: 0.55rem; font-weight: 300;">0 RECORDS</span>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <button class="type-pill active" onclick="filterCategory('ALL', this)">ALL_ASSETS</button>
+                    <button class="type-pill" onclick="filterCategory('AIRCRAFT', this)">AIRCRAFT</button>
+                    <button class="type-pill" onclick="filterCategory('GROUND', this)">GROUND_FORCES</button>
+                    <button class="type-pill" onclick="filterCategory('NAVY', this)">NAVAL_UNITS</button>
+                    <button class="type-pill" onclick="filterCategory('ORDNANCE', this)">ORDNANCE/AMMO</button>
+                </div>
+
+                <div class="position-relative mb-5">
+                    <span class="position-absolute top-50 start-0 translate-middle-y text-danger fw-bold"
+                        style="font-size: 0.8rem; font-family: var(--font-main); ">CMD></span>
+                    <input type="text" id="assetSearch"
+                        class="form-control bg-transparent border-0 border-bottom border-white border-opacity-10 rounded-0 ps-5 text-white shadow-none"
+                        style="font-size: 0.55rem; letter-spacing: 1px; font-family: var(--font-main); transition: all 0.3s ease;color:white;"
+                        placeholder="ASSET_SEARCH..." onkeyup="searchAssets()">
+                </div>
+
+                <div id="assetGrid" class="row g-4"></div>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal fade" id="eventModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-black rounded-0 shadow-lg" style="border: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="label-micro text-secondary"
+                            style="font-size: 0.65rem; letter-spacing: 2px;">NEW_ENTRY</span>
+                        <button type="button" class="btn-close btn-close-white" style="font-size: 0.5rem; opacity: 0.5;"
+                            data-bs-dismiss="modal"></button>
+                    </div>
+                    <textarea id="evTitle" class="form-control intel-input mb-4 text-center" rows="3"
+                        placeholder="OBJECTIVE"
+                        style="font-size: 0.8rem; letter-spacing: 2px; resize: none;"></textarea>
+                    <input type="text" id="evCategory" class="form-control intel-input mb-3 text-center"
+                        placeholder="CATEGORY_TAG" style="font-size: 0.75rem; letter-spacing: 1px;">
+                    <input type="date" id="evDate" class="form-control intel-input mb-3 text-center text-secondary"
+                        style="font-size: 0.75rem; letter-spacing: 1px;">
+                    <textarea id="evNotes" class="form-control intel-input mb-4 text-center" rows="2"
+                        placeholder="ADDITIONAL_NOTES"
+                        style="font-size: 0.75rem; letter-spacing: 1px; resize: none;"></textarea>
+                    <div class="mt-4 pt-2 border-top border-secondary border-opacity-10">
+                        <button class="btn btn-outline-secondary btn-sm rounded-0 px-4 py-1 hover-red mt-2"
+                            id="saveEvent" style="font-size: 0.65rem; letter-spacing: 2px; transition: 0.3s;"
+                            data-bs-dismiss="modal">[ SYNC ]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="journalDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-black border-secondary rounded-0 shadow-lg">
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="label-micro text-secondary">OPERATIONAL_LOG // TACTICAL_JOURNAL</span>
+                        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <h4 class="text-white fw-bold mb-1" id="jouTitle">OPERATION_NAME</h4>
+                    <div class="label-micro opacity-50 mb-4" id="jouTimestamp">TIMESTAMP</div>
+
+                    <div class="p-3 border-start border-secondary" id="jouSummary"
+                        style="background: rgba(255,255,255,0.02); font-size: 0.75rem; color: #ccc; white-space: pre-wrap;">
+                        ...
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top border-secondary border-opacity-10">
+                        <button class="btn btn-link text-white p-0 text-decoration-none hover-red" id="jouEditBtn"
+                            style="font-size: 0.6rem;">[ EDIT_ENTRY ]</button>
+                        <button class="btn btn-link text-danger p-0 text-decoration-none hover-red" id="jouDelBtn"
+                            style="font-size: 0.6rem;">[ PURGE_RECORD ]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="personnelDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-0"
+                style="background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); border: none; border-left: 2px solid rgba(255, 255, 255, 0.15);">
+
+                <div class="modal-body p-4" style="font-family: 'IBM Plex Mono', monospace; color: white;">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="text-danger fw-bold"
+                            style="font-size: 0.55rem; letter-spacing: 3px;">SYS://DOSSIER_DATA</span>
+                        <button class="btn btn-link text-white p-0 text-decoration-none opacity-25"
+                            data-bs-dismiss="modal" style="font-size: 0.6rem;">[ ESC ]</button>
+                    </div>
+
+                    <div class="mb-4">
+                        <h2 class="text-white mb-0 fw-bold" id="detCallsign"
+                            style="letter-spacing: 4px; font-size: 1.2rem; text-transform: uppercase;">BELUGA</h2>
+                        <div class=" opacity-75" id="detFullName"
+                            style="font-size: 0.75rem ; font-family: var(--font-main);">> PANNAPAT L.
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-6">
+                            <div style="font-size: 0.5rem; color: rgba(255,255,255,0.3); letter-spacing: 1px;">ID_CODE
+                            </div>
+                            <div id="detIdCode" style="font-size: 0.8rem; letter-spacing: 1px;">---</div>
+                        </div>
+                        <div class="col-6">
+                            <div style="font-size: 0.5rem; color: rgba(255,255,255,0.3); letter-spacing: 1px;">DOB_VAL
+                            </div>
+                            <div id="detDob" style="font-size: 0.8rem; letter-spacing: 1px;">---</div>
+                        </div>
+                        <div class="col-6">
+                            <div style="font-size: 0.5rem; color: rgba(255,255,255,0.3); letter-spacing: 1px;">COMMS_LN
+                            </div>
+                            <div id="detContact" style="font-size: 0.8rem; letter-spacing: 1px;">---</div>
+                        </div>
+                        <div class="col-6">
+                            <div style="font-size: 0.5rem; color: rgba(255,255,255,0.3); letter-spacing: 1px;">LOC_CRD
+                            </div>
+                            <div id="detAddress" style="font-size: 0.8rem; letter-spacing: 1px;">---</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                        <div class="text-danger mb-2" style="font-size: 0.55rem; letter-spacing: 2px;">//
+                            FIELD_OBSERVATIONS:</div>
+                        <div id="detSummary"
+                            style="font-size: 0.75rem; color: rgba(255,255,255,0.6); line-height: 1.6; white-space: pre-wrap;">
+                            ...</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div style="font-size: 0.45rem; color: rgba(255,255,255,0.2); letter-spacing: 2px;">
+                            LOG_SYNC: <span id="detTimestamp">---</span>
+                        </div>
+
+                        <div id="detAdminActions" class="d-flex gap-4">
+                            <button class="btn btn-link p-0 text-decoration-none" id="detEditBtn"
+                                style="font-size: 0.55rem; color: rgba(255,255,255,0.4); letter-spacing: 1px;">[ EDIT
+                                ]</button>
+                            <button class="btn btn-link p-0 text-decoration-none text-danger" id="detDelBtn"
+                                style="font-size: 0.55rem; opacity: 0.6; letter-spacing: 1px;">[ PURGE ]</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="modal fade" id="viewTaskModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-black rounded-0 shadow-lg" style="border: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="label-micro text-secondary" id="modalCategory"
+                            style="font-size: 0.55rem; letter-spacing: 2px;">CATEGORY</span>
+                        <button type="button" class="btn-close btn-close-white" style="font-size: 0.5rem; opacity: 0.5;"
+                            data-bs-dismiss="modal"></button>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2" id="modalTitle" style="letter-spacing: 1px;">OBJECTIVE_LOADED
+                    </h5>
+                    <div class="label-micro text-danger mb-4" id="modalDate" style="font-size: 0.6rem;">TIMESTAMP</div>
+                    <p class="text-secondary mb-2" id="modalNotes"
+                        style="font-size: 0.7rem; line-height: 1.5; white-space: pre-wrap;">...</p>
+                    <div
+                        class="mt-4 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-center gap-3">
+                        <button class="btn btn-link text-white p-0 text-decoration-none hover-red" id="evEditBtn"
+                            style="font-size: 0.6rem;">[ EDIT_ENTRY ]</button>
+                        <button class="btn btn-link text-danger p-0 text-decoration-none hover-red" id="evDelBtn"
+                            style="font-size: 0.6rem;">[ PURGE_RECORD ]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div class="modal fade" id="sysAlertModal" tabindex="-1" style="z-index: 1070;">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content rounded-0 border-0"
+                style="background: rgba(5, 5, 5, 0.95); border-top: 2px solid var(--red) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div class="modal-body p-4 text-center">
+                    <div class="label-micro text-danger mb-2"
+                        style="font-size: 0.6rem; letter-spacing: 3px; font-weight: bold;" id="sysAlertTitle">
+                        SYSTEM_NOTICE</div>
+
+                    <p class="text-white mb-4" id="sysAlertMessage"
+                        style="font-size: 0.7rem; letter-spacing: 1px; line-height: 1.5; font-family: 'IBM Plex Mono', monospace; opacity: 0.9;">
+                        ...
+                    </p>
+
+                    <button class="btn btn-danger btn-sm w-100 rounded-0 border-0 fw-bold" data-bs-dismiss="modal"
+                        style="font-size: 0.6rem; letter-spacing: 2px; background-color: var(--red); color: white; padding: 8px;">
+                        ACKNOWLEDGE_RECEIPT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div class="modal fade" id="sysConfirmModal" tabindex="-1" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-black rounded-0 shadow">
+                <div class="modal-body p-4 text-center">
+                    <div class="label-micro text-danger mb-3"
+                        style="font-size: 0.7rem; letter-spacing: 2px;font-family: var(--font-main)">
+                        AUTHORIZATION</div>
+                    <p class="text-white opacity-50 mb-4" id="sysConfirmMessage"
+                        style="font-size: 0.65rem; letter-spacing: 1px;">
+                        ...</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-outline-warning btn-sm w-50 rounded-0" id="sysConfirmCancel"
+                            style="font-size: 0.65rem; letter-spacing: 1px;">ABORT</button>
+                        <button class="btn btn-danger btn-sm w-50 rounded-0" id="sysConfirmProceed"
+                            style="font-size: 0.65rem; letter-spacing: 1px;">PROCEED</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="def.js"></script>
+    <script src="menu.js"></script>
+</body>
+
+</html>
