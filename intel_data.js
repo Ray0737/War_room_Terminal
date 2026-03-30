@@ -20,6 +20,28 @@ const globalMilIntelligence = [
     { name: "CHEYENNE MOUNTAIN", lat: 38.7442, lng: -104.8461, type: "bunker", unit: "NORAD/NORTHCOM", info: "Hardened Granite Command Complex" },
     { name: "RAVEN ROCK (SITE R)", lat: 39.7347, lng: -77.4214, type: "bunker", unit: "AJCC / Pentagon Alt", info: "Underground DoD Relocation Hub" },
     { name: "MOUNT WEATHER", lat: 39.0631, lng: -77.8889, type: "bunker", unit: "FEMA/COG", info: "Civilian Executive Continuity Center" },
+    
+    // --- SWISS ALPINE FORTRESS (THE RÉDUIT) ---
+    { name: "SASSO SAN GOTTARDO", lat: 46.5574, lng: 8.5619, type: "bunker", unit: "Swiss Army / Museum", info: "Historic Gottard Pass Artillery Fortress" },
+    { name: "FORT MAGLETSCH", lat: 47.0543, lng: 9.4283, type: "bunker", unit: "Swiss Alpine Command", info: "Strategic Fortress - Sargans District" },
+    { name: "FORT DE DAILLY", lat: 46.2166, lng: 7.0366, type: "bunker", unit: "St. Maurice Defense", info: "Supreme Artillery Fortress (CHE)" },
+    { name: "SONNENBERG TUNNEL", lat: 47.0428, lng: 8.2861, type: "bunker", unit: "Civil Defense", info: "World's Largest Fallout Shelter (Lucerne)" },
+    { name: "K-20 KANDERSTEG", lat: 46.4950, lng: 7.6710, type: "bunker", unit: "Swiss Fed Council", info: "Supreme Government Command Center" },
+    { name: "FORT FÜRIGEN", lat: 46.9936, lng: 8.3582, type: "bunker", unit: "Inner Swiss Command", info: "Hardened Alpine Artillery Complex" },
+    { name: "FORT DE CHILLON", lat: 46.4143, lng: 6.9272, type: "bunker", unit: "Vaud Defense", info: "Strategic Lake Geneva Artillery Node" },
+    { name: "FORT DE VALLORBE", lat: 46.7118, lng: 6.3776, type: "bunker", unit: "Jura Border Command", info: "Pré-Giroud Artillery Fortress" },
+    { name: "FORT DE CHAMPEX", lat: 46.0357, lng: 7.1121, type: "bunker", unit: "Valais Command", info: "Underground Artillery Command Post" },
+    { name: "FORT DE SAVATAN", lat: 46.2208, lng: 7.0252, type: "bunker", unit: "St. Maurice Region", info: "Primary Artillery Complex (CHE)" },
+    
+    // --- GLOBAL STRATEGIC COMMAND BUNKERS ---
+    { name: "YAMANTAL MOUNTAIN", lat: 54.2541, lng: 58.1158, type: "bunker", unit: "Russia / Strategic Ops", info: "Hardened Strategic Command Hub (RU)" },
+    { name: "KOSVINSKY MOUNTAIN", lat: 60.1517, lng: 59.1847, type: "bunker", unit: "Russia / C3", info: "Nuclear Command & Control Center (RU)" },
+    { name: "NORTH BAY (DRTP)", lat: 46.3639, lng: -79.4025, type: "bunker", unit: "NORAD / RCAF", info: "Hardened Underground Command Site (CA)" },
+    { name: "PINE GAP", lat: -23.7997, lng: 133.7372, type: "bunker", unit: "CIA / NSA / ADF", info: "Joint Strategic Signals Intel Facility" },
+    { name: "IDF WAR ROOM", lat: 32.0736, lng: 34.7925, type: "bunker", unit: "IDF General Staff", info: "Underground National HQ (HaKirya)" },
+    { name: "CHUNG-KYUNG B-1", lat: 37.5256, lng: 127.0503, type: "bunker", unit: "ROK / US Joint", info: "Supreme Command Center (Seoul)" },
+    { name: "COMMAND HOLE 202", lat: 25.0336, lng: 121.5647, type: "bunker", unit: "Taiwan MOD", info: "Strategic Government Relocation Hub" },
+    
     { name: "JB LANGLEY", lat: 37.0850, lng: -76.3606, type: "air", unit: "1st FW / 480th ISR", aircraft: "F-22 Raptor, T-38 Talon" },
     { name: "MINOT AFB", lat: 48.4150, lng: -101.3270, type: "air", unit: "5th BW / 91st MW", aircraft: "B-52H, Minuteman III, UH-1N" },
     { name: "GRAND FORKS AFB", lat: 47.9552, lng: -97.4011, type: "air", unit: "319th RW", aircraft: "RQ-4B Global Hawk" },

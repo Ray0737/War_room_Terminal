@@ -7,6 +7,7 @@ const TRACKER_TOPIC = 'stratcom/defcon/v2/live_agents';
 const USER_ID = 'AGENT_' + Math.random().toString(36).substr(2, 9).toUpperCase();
 const activeAgents = new Map();
 let mqttClient = null;
+let isWatching = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Wait for the map to initialize properly
@@ -21,11 +22,18 @@ function initTracker() {
     }
 
     // Connect to HiveMQ Public Broker via Secure WebSockets
-    console.log('[TRACKER] Initializing secure uplink to HiveMQ...');
+    console.log('[TRACKER] Initializing secure uplink via HiveMQ...');
     mqttClient = mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
+
+    const updateUplinkUI = (status, color) => {
+        const countEl = document.getElementById('agent-count');
+        if (countEl) countEl.style.color = color;
+        console.log(`[TRACKER] Uplink status: ${status}`);
+    };
 
     mqttClient.on('connect', () => {
         console.log(`[TRACKER] ${USER_ID} connected to secure uplink.`);
+        updateUplinkUI('CONNECTED', '#ff0055');
         mqttClient.subscribe(TRACKER_TOPIC, (err) => {
             if (!err) {
                 console.log(`[TRACKER] Subscribed to ${TRACKER_TOPIC}`);
@@ -36,12 +44,22 @@ function initTracker() {
         });
     });
 
+    mqttClient.on('error', (err) => {
+        console.error('[TRACKER] Uplink error:', err);
+        updateUplinkUI('ERROR', '#ff9900');
+    });
+
+    mqttClient.on('offline', () => {
+        updateUplinkUI('OFFLINE', '#444');
+    });
+
     mqttClient.on('message', (topic, message) => {
         if (topic === TRACKER_TOPIC) {
             try {
                 const data = JSON.parse(message.toString());
                 if (data.id && data.lat !== undefined && data.lng !== undefined) {
-                    // Update field agents (we can also render ourselves to confirm it's working)
+                    // Filter out stale broadcast messages (>2 mins)
+                    if (data.timestamp && Date.now() - data.timestamp > 120000) return;
                     updateAgentLocation(data, data.id === USER_ID);
                 }
             } catch (e) {
@@ -53,63 +71,112 @@ function initTracker() {
     // Cleanup stale agents every 30 seconds
     setInterval(() => {
         const now = Date.now();
+        let changed = false;
+        
+        const targetLayer = (window.tacticalLayers && window.tacticalLayers.agents) 
+                            ? window.tacticalLayers.agents 
+                            : window.worldMapObj;
+
         for (const [id, agent] of activeAgents.entries()) {
             if (now - agent.lastSeen > 60000) { // 60 seconds without ping = stale
-                if (agent.marker && window.worldMapObj.hasLayer(agent.marker)) {
-                    if (window.tacticalLayers && window.tacticalLayers.agents) {
-                        window.tacticalLayers.agents.removeLayer(agent.marker);
-                    } else {
-                        window.worldMapObj.removeLayer(agent.marker);
-                    }
+                if (agent.marker) {
+                    targetLayer.removeLayer(agent.marker);
                 }
                 activeAgents.delete(id);
                 console.log(`[TRACKER] Agent ${id} signal lost (stale).`);
+                changed = true;
             }
         }
+        if (changed) updateAgentCount();
     }, 30000);
 }
 
+function updateAgentCount() {
+    const countEl = document.getElementById('agent-count');
+    if (countEl) {
+        countEl.innerText = activeAgents.size.toString().padStart(2, '0');
+    }
+}
+
+async function fetchIPLocation() {
+    console.log('[TRACKER] Attempting IP-geoloc fallback...');
+    try {
+        const response = await fetch('https://freeipapi.com/api/json');
+        if (!response.ok) throw new Error('IP API failed');
+        const data = await response.json();
+        
+        if (data.latitude && data.longitude) {
+            console.log(`[TRACKER] IP-geoloc successful: ${data.cityName}`);
+            const payload = {
+                id: USER_ID,
+                lat: data.latitude,
+                lng: data.longitude,
+                timestamp: Date.now(),
+                isFallback: true
+            };
+            
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(TRACKER_TOPIC, JSON.stringify(payload));
+            }
+            updateAgentLocation(payload, true);
+        }
+    } catch (e) {
+        console.error('[TRACKER] IP Fallback failed:', e);
+    }
+}
+
 function startBroadcast() {
-    // Geolocation requires HTTP or HTTPS. It will silently fail on file:/// in many browsers.
-    if (window.location.protocol === 'file:') {
-        console.warn('[TRACKER] Geolocation is blocked on file:// protocol. Please use http://127.0.0.1:3584');
+    if (isWatching) return;
+    
+    if (!('geolocation' in navigator)) {
+        console.error('[TRACKER] Geolocation is NOT supported. Fallback to IP...');
+        fetchIPLocation();
         return;
     }
 
-    if ('geolocation' in navigator) {
-        console.log('[TRACKER] Requesting geolocation coordinates...');
-        navigator.geolocation.watchPosition(
-            (position) => {
-                const payload = {
-                    id: USER_ID,
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    timestamp: Date.now()
-                };
-                
-                // Publish our location to the swarm
-                mqttClient.publish(TRACKER_TOPIC, JSON.stringify(payload));
-                
-                // Locally update our own location immediately
-                updateAgentLocation(payload, true);
-            },
-            (error) => {
-                console.warn('[TRACKER] Geolocation error:', error.message, 'Code:', error.code);
-                if (error.code === error.PERMISSION_DENIED) {
-                    console.warn('[TRACKER] User denied location access. Operating in ghost mode.');
-                } else if (error.code === error.TIMEOUT) {
-                    console.warn('[TRACKER] Geolocation request timed out.');
-                }
-            },
-            {
-                enableHighAccuracy: false, // Desktops often fail with high accuracy
-                maximumAge: 10000,         
-                timeout: 30000             // Give it more time  to figure out location
-            }
-        );
-    } else {
-        console.error('[TRACKER] Geolocation is not supported by this browser.');
+    console.log('[TRACKER] Requesting geolocation... (Protocol:', window.location.protocol, ')');
+    
+    // Check if on file:// protocol which usually blocks geolocation
+    if (window.location.protocol === 'file:') {
+        console.warn('[TRACKER] WARNING: Geolocation usually fails on file://. Recommend using a local server.');
+        alert('STRATCOM_ALERT: Real-time tracking is BLOCKED by the browser on file:// protocol.\n\nPlease host this project or use a local server (like VS Code Live Server) to see real-time agent locations.');
     }
+
+    const geoOptions = {
+        enableHighAccuracy: true, 
+        maximumAge: 0,          
+        timeout: 8000 // Shorten timeout to trigger fallback faster
+    };
+
+    isWatching = true;
+    navigator.geolocation.watchPosition(
+        (position) => {
+            const payload = {
+                id: USER_ID,
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                timestamp: Date.now()
+            };
+            
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(TRACKER_TOPIC, JSON.stringify(payload));
+            }
+            
+            // Locally update our own location immediately
+            updateAgentLocation(payload, true);
+        },
+        (error) => {
+            console.warn('[TRACKER] Native geolocation unavailable or blocked. Activating IP-geoloc fallback.');
+            fetchIPLocation();
+            
+            // If it was a permission or protocol issue, we stop watching and just rely on IP refresh
+            if (error.code === error.PERMISSION_DENIED || window.location.protocol === 'file:') {
+                 // Refresh IP location every 30 seconds as fallback
+                 setInterval(fetchIPLocation, 30000);
+            }
+        },
+        geoOptions
+    );
 }
 
 function updateAgentLocation(data, isSelf = false) {
@@ -122,10 +189,9 @@ function updateAgentLocation(data, isSelf = false) {
     let agent = activeAgents.get(data.id);
 
     if (!agent) {
-        // Create new blip marker
-        const iconHtml = `<div class="agent-blip"></div>`;
+        const iconHtml = `<div class="agent-blip" style="${isSelf ? 'background: #00ff00; box-shadow: 0 0 10px #00ff00;' : ''}"></div>`;
         const icon = L.divIcon({
-            className: '', // reset default leaflet class
+            className: '', 
             html: iconHtml,
             iconSize: [12, 12],
             iconAnchor: [6, 6]
@@ -140,6 +206,7 @@ function updateAgentLocation(data, isSelf = false) {
                             <div style="margin-top: 5px; color: rgba(255,255,255,0.6);">
                                 LAT: ${data.lat.toFixed(5)}<br>
                                 LNG: ${data.lng.toFixed(5)}<br>
+                                SOURCE: ${data.isFallback ? 'IP_TRIANGULATION' : 'GPS_GNSS'}<br>
                                 STATUS: ONLINE
                             </div>
                         </div>`);
@@ -149,11 +216,9 @@ function updateAgentLocation(data, isSelf = false) {
         agent = { marker: marker, lastSeen: data.timestamp };
         activeAgents.set(data.id, agent);
         
-        if (!isSelf) {
-            console.log(`[TRACKER] New agent detected on radar: ${data.id}`);
-        }
+        if (!isSelf) console.log(`[TRACKER] New agent detected on radar: ${data.id}`);
+        updateAgentCount();
     } else {
-        // Update existing marker
         agent.marker.setLatLng([data.lat, data.lng]);
         agent.lastSeen = data.timestamp;
     }

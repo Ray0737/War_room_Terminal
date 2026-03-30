@@ -411,6 +411,10 @@
             border-bottom-color: #ffe000;
         }
 
+        .triangle-purple {
+            border-bottom-color: #8e44ad;
+        }
+
         .leaflet-popup-content {
             margin: 12px !important;
             min-width: 180px !important;
@@ -789,11 +793,11 @@
 
     <div class="defcon-layout">
         <div class="top-nav">
-            <div style="flex: 1;">
+            <div style="flex: 1; display: flex; align-items: center;">
                 <a href="menu.html" class="bi bi-house"></a>
             </div>
 
-            <div class="d-flex align-items-center" style="min-width: 0; flex: 1;">
+            <div class="d-flex align-items-center justify-content-center" style="min-width: 0; flex: 0 1 auto;">
                 <div class="timezone-cluster">
                     <!-- Zulu Time (relocated here for mobile scroll) -->
                     <div class="tz-item tz-item-zulu">
@@ -821,6 +825,10 @@
                         <div id="tz-jpn" class="tz-time">--:--:--</div>
                     </div>
                 </div>
+            </div>
+
+            <div style="flex: 1; display: flex; justify-content: flex-end;">
+                <!-- Right side empty for balancing, or can add something here later -->
             </div>
         </div>
 
@@ -880,6 +888,13 @@
                     </div>
                     <span style="color: #ff3e3e;">SILO</span>
                 </div>
+                <div id="toggle-bunker" onclick="toggleTacticalLayer('bunker')"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <div class="status-led"
+                        style="width: 4px; height: 4px; border-radius: 50%; background: #8e44ad; box-shadow: 0 0 4px #8e44ad;">
+                    </div>
+                    <span style="color: #8e44ad;">BUNKER</span>
+                </div>
                 <div id="toggle-fleet" onclick="toggleTacticalLayer('fleet')"
                     style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
                     <div class="status-led"
@@ -888,11 +903,15 @@
                     <span style="color: #ff2400;">FLEET</span>
                 </div>
                 <div id="toggle-agents" onclick="toggleTacticalLayer('agents')"
-                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
-                    <div class="status-led"
-                        style="width: 4px; height: 4px; border-radius: 50%; background: #ff0055; box-shadow: 0 0 4px #ff0055;">
+                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 1px;">
+                        <div id="agent-count"
+                            style="font-size: 0.42rem; font-weight: 900; color: #ff0055; line-height: 1;">--</div>
+                        <div class="status-led"
+                            style="width: 4px; height: 4px; border-radius: 50%; background: #ff0055; box-shadow: 0 0 4px #ff0055;">
+                        </div>
                     </div>
-                    <span style="color: #ff0055;">AGENTS</span>
+                    <span style="color: #ff0055; font-weight: 700;">AGENTS</span>
                 </div>
                 <div id="toggle-plane" onclick="window.milTracker.toggle()"
                     style="display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">

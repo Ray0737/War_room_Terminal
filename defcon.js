@@ -36,6 +36,7 @@ function initWorldMap() {
         mil: L.layerGroup().addTo(worldMap),
         airport: L.layerGroup().addTo(worldMap),
         silo: L.layerGroup().addTo(worldMap),
+        bunker: L.layerGroup().addTo(worldMap),
         fleet: L.layerGroup().addTo(worldMap),
         agents: L.layerGroup().addTo(worldMap)
     };
@@ -60,6 +61,7 @@ function initWorldMap() {
             airport: '#ffe000', 
             mil: '#4b7bec', 
             silo: '#ff3e3e',
+            bunker: '#8e44ad',
             fleet: '#ff2400',
             agents: '#ff0055'
         };
@@ -138,10 +140,15 @@ function initWorldMap() {
     if (typeof globalMilIntelligence !== 'undefined') {
         globalMilIntelligence.forEach(base => {
             let marker;
-            const targetLayer = base.type === 'infra' ? tacticalLayers.infra : base.type === 'gov' ? tacticalLayers.gov : tacticalLayers.mil;
+            // Identify target layer based on type
+            let targetLayer;
+            if (base.type === 'infra') targetLayer = tacticalLayers.infra;
+            else if (base.type === 'gov') targetLayer = tacticalLayers.gov;
+            else if (base.type === 'bunker') targetLayer = tacticalLayers.bunker;
+            else targetLayer = tacticalLayers.mil;
             
-            if (base.type === 'infra' || base.type === 'gov') {
-                const triangleClass = base.type === 'infra' ? 'triangle-orange' : 'triangle-white';
+            if (base.type === 'infra' || base.type === 'gov' || base.type === 'bunker') {
+                const triangleClass = base.type === 'infra' ? 'triangle-orange' : base.type === 'gov' ? 'triangle-white' : 'triangle-purple';
                 const icon = L.divIcon({
                     className: `tactical-triangle ${triangleClass}`,
                     iconSize: [12, 12],
@@ -157,8 +164,8 @@ function initWorldMap() {
                 marker = L.marker([base.lat, base.lng], { icon: icon }).addTo(targetLayer);
             }
 
-            const typeLabel = base.type === 'infra' ? 'CRITICAL_INFRA' : base.type === 'gov' ? 'GOV_CENTER' : 'MIL_INSTALLATION';
-            const nameColor = base.type === 'infra' ? '#ff8c00' : base.type === 'gov' ? '#fff' : '#4b7bec';
+            const typeLabel = base.type === 'infra' ? 'CRITICAL_INFRA' : base.type === 'gov' ? 'GOV_CENTER' : base.type === 'bunker' ? 'COMMAND_BUNKER' : 'MIL_INSTALLATION';
+            const nameColor = base.type === 'infra' ? '#ff8c00' : base.type === 'gov' ? '#fff' : base.type === 'bunker' ? '#8e44ad' : '#4b7bec';
             marker.bindPopup(`<div style="font-family: var(--font-mono); font-size: 0.6rem;">
                                 <div style="color: rgba(255,255,255,0.4); margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px;">${typeLabel}</div>
                                 <strong style="color: ${nameColor}; letter-spacing: 1px;">${base.name}</strong><br>
