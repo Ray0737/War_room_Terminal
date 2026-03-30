@@ -33,7 +33,17 @@ const globalMilIntelligence = [
     { name: "FORT DE CHAMPEX", lat: 46.0357, lng: 7.1121, type: "bunker", unit: "Valais Command", info: "Underground Artillery Command Post" },
     { name: "FORT DE SAVATAN", lat: 46.2208, lng: 7.0252, type: "bunker", unit: "St. Maurice Region", info: "Primary Artillery Complex (CHE)" },
     
+    // --- SWISS AIR FORCE BASES ---
+    { name: "PAYERNE AIR BASE", lat: 46.8436, lng: 6.9161, type: "air", unit: "Swiss 11th & 17th Sqn", aircraft: "F/A-18C/D Hornet, F-35A", info: "Primary Jet Ops Hub (CHE)" },
+    { name: "MEIRINGEN AIR BASE", lat: 46.7456, lng: 8.1100, type: "air", unit: "Swiss 11th Sqn", aircraft: "F/A-18 Hornet", info: "Mountain Protected Base" },
+    { name: "EMMEN AIR BASE", lat: 47.0911, lng: 8.3047, type: "air", unit: "Logistics Hub", aircraft: "F-5E, ADS-15, PC-21", info: "Primary Maintenance & Training Hub" },
+    { name: "SION AIR BASE", lat: 46.2186, lng: 7.3267, type: "air", unit: "Swiss Air Force Center", aircraft: "F/A-18, F-5 (Rotational)", info: "Mixed Civ/Mil Strategic Base" },
+    { name: "LOCARNO AIR BASE", lat: 46.1600, lng: 8.8783, type: "air", unit: "Pilot School", aircraft: "PC-7, PC-9", info: "Primary Fixed-Wing Training Hub" },
+    { name: "DÜBENDORF AIR BASE", lat: 47.3986, lng: 8.6481, type: "air", unit: "Air Intelligence Hub", aircraft: "various", info: "Air Defense Operations Center Hub" },
+    { name: "ALPNACH AIR BASE", lat: 46.9419, lng: 8.2839, type: "air", unit: "LTW 2 & 7", aircraft: "Super Puma, EC635", info: "Primary Helicopter Hub (CHE)" },
+    
     // --- GLOBAL STRATEGIC COMMAND BUNKERS ---
+
     { name: "YAMANTAL MOUNTAIN", lat: 54.2541, lng: 58.1158, type: "bunker", unit: "Russia / Strategic Ops", info: "Hardened Strategic Command Hub (RU)" },
     { name: "KOSVINSKY MOUNTAIN", lat: 60.1517, lng: 59.1847, type: "bunker", unit: "Russia / C3", info: "Nuclear Command & Control Center (RU)" },
     { name: "NORTH BAY (DRTP)", lat: 46.3639, lng: -79.4025, type: "bunker", unit: "NORAD / RCAF", info: "Hardened Underground Command Site (CA)" },
